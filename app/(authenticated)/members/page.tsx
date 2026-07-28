@@ -47,7 +47,7 @@ const addSchema = z.object({
     .regex(/^[0-9]{10,11}$/, "Enter 10-11 digit phone"),
   staff_id: z.string().min(1),
   date_joined: z.string().min(1),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.string().optional().or(z.literal("")),
   role: z.string().min(1).default("member"),
   workplace: z.string().optional().or(z.literal("")),
 });
@@ -400,12 +400,14 @@ export default function MembersPage() {
         size="lg"
       >
         <form
-          onSubmit={handleSubmit((d) =>
-            addMutation.mutate({
+          onSubmit={handleSubmit((d) => {
+            const payload = {
               ...d,
               phone_number: formatToNigeriaInternational(d.phone_number),
-            }),
-          )}
+            };
+            console.log("Payload to send:", payload);
+            return addMutation.mutate(payload);
+          })}
           className="space-y-4"
         >
           <div className="grid grid-cols-2 gap-4">
@@ -435,14 +437,14 @@ export default function MembersPage() {
               error={errors.staff_id?.message as string | undefined}
               required
             >
-              <Input {...register("staff_id")} placeholder="GOV/OY/2019/001" />
+              <Input {...register("staff_id")} placeholder="GOV/OY/001" />
             </FormField>
             <FormField
-              label="Date Joined"
-              error={errors.date_joined?.message as string | undefined}
+              label="Mutan ID"
+              error={errors.mutan_id?.message as string | undefined}
               required
             >
-              <Input type="date" {...register("date_joined")} />
+              <Input {...register("mutan_id")} placeholder="MS001 or MP001" />
             </FormField>
             <FormField
               label="Email Address"
@@ -454,6 +456,19 @@ export default function MembersPage() {
                 placeholder="optional"
               />
             </FormField>
+            <FormField
+              label="Date Joined"
+              error={errors.date_joined?.message as string | undefined}
+              required
+            >
+              <Input type="date" {...register("date_joined")} />
+            </FormField>
+            <FormField
+              label="Workplace"
+              error={errors.workplace?.message as string | undefined}
+            >
+              <Input {...register("workplace")} placeholder="optional" />
+            </FormField>
             <FormField label="Role">
               <Select {...register("role")}>
                 <option value="member">Member</option>
@@ -463,36 +478,10 @@ export default function MembersPage() {
                 <option value="chairman">Chairman</option>
               </Select>
             </FormField>
-            <FormField
-              label="Workplace"
-              error={errors.workplace?.message as string | undefined}
-            >
-              <Input {...register("workplace")} placeholder="optional" />
-            </FormField>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAdd(false);
-                reset();
-              }}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={addMutation.isPending}
-              className="btn-primary"
-            >
-              {addMutation.isPending ? "Adding…" : "Add Member"}
-            </button>
           </div>
         </form>
       </Modal>
 
-      {/* Member Detail Modal */}
       <Modal
         open={!!selected}
         onClose={() => setSelected(null)}
