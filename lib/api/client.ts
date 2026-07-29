@@ -12,6 +12,7 @@ export const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+  timeout: 60_000 // 60 seconds
 })
 
 // Silent refresh on 401 — no token to read or attach, the refresh_token
