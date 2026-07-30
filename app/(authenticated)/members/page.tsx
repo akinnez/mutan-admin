@@ -479,6 +479,25 @@ export default function MembersPage() {
               </Select>
             </FormField>
           </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAdd(false);
+                reset();
+              }}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={addMutation.isPending}
+              className="btn-primary"
+            >
+              {addMutation.isPending ? "Adding…" : "Add Member"}
+            </button>
+          </div>
         </form>
       </Modal>
 
