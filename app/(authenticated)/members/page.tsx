@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Pencil,
 } from "lucide-react";
 import type { Member } from "@/lib/types";
 
@@ -62,6 +63,8 @@ export default function MembersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
+  const [editTarget, setEditTarget] = useState<Member | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
 
@@ -118,6 +121,38 @@ export default function MembersPage() {
     onError: (e: any) =>
       toast.error(e.response?.data?.message ?? "Reset failed"),
   });
+
+  const editMutation = useMutation({
+    mutationFn: (data: Record<string, string>) =>
+      membersApi.update(
+        editTarget!.id,
+        Object.fromEntries(
+          Object.entries(data).filter(([_, v]) => v !== "" && v !== undefined),
+        ),
+      ),
+    onSuccess: () => {
+      toast.success("Member updated successfully");
+      qc.invalidateQueries({ queryKey: ["members"] });
+      setEditTarget(null);
+      setEditForm({});
+    },
+    onError: (e: any) =>
+      toast.error(e.response?.data?.message ?? "Update failed"),
+  });
+
+  const openEdit = (m: Member) => {
+    setEditTarget(m);
+    setEditForm({
+      full_name: m.full_name ?? "",
+      phone_number: m.phone_number ?? "",
+      staff_id: m.staff_id ?? "",
+      email: (m as any).email ?? "",
+      workplace_name: (m as any).workplace_name ?? "",
+      date_joined: m.date_joined ? m.date_joined.slice(0, 10) : "",
+      role: m.role ?? "member",
+      membership_status: (m as any).membership_status ?? "active",
+    });
+  };
 
   const importMutation = useMutation({
     mutationFn: (file: File) => {
@@ -297,6 +332,12 @@ export default function MembersPage() {
                               <Eye size={14} />
                             </button>
                             <button
+                              onClick={() => openEdit(m)}
+                              className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
                               onClick={() => setResetTarget(m)}
                               className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600"
                             >
@@ -342,6 +383,13 @@ export default function MembersPage() {
                         className="btn-secondary flex items-center justify-center gap-1.5 text-xs py-2"
                       >
                         <Eye size={13} /> View
+                      </button>
+                      <button
+                        onClick={() => openEdit(m)}
+                        className="btn-secondary flex items-center justify-center gap-1.5 text-xs py-2"
+                        style={{ color: "#1d4ed8" }}
+                      >
+                        <Pencil size={13} /> Edit
                       </button>
                       <button
                         onClick={() => setResetTarget(m)}
@@ -501,6 +549,7 @@ export default function MembersPage() {
         </form>
       </Modal>
 
+      {/* Member Detail Modal */}
       <Modal
         open={!!selected}
         onClose={() => setSelected(null)}
@@ -661,6 +710,128 @@ export default function MembersPage() {
         confirmLabel="Reset Access"
         variant="danger"
       />
+
+      {/* Edit Member Modal */}
+      <Modal
+        open={!!editTarget}
+        onClose={() => {
+          setEditTarget(null);
+          setEditForm({});
+        }}
+        title={`Edit — ${editTarget?.full_name ?? ""}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Full Name" required>
+              <Input
+                value={editForm.full_name ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, full_name: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Staff ID" required>
+              <Input
+                value={editForm.staff_id ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, staff_id: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Phone Number" required>
+              <Input
+                value={editForm.phone_number ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, phone_number: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Email">
+              <Input
+                type="email"
+                value={editForm.email ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Workplace">
+              <Input
+                value={editForm.workplace_name ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, workplace_name: e.target.value }))
+                }
+              />
+            </FormField>
+            <FormField label="Date Joined" required>
+              <Input
+                type="date"
+                value={editForm.date_joined ?? ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, date_joined: e.target.value }))
+                }
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Role" required>
+              <Select
+                value={editForm.role ?? "member"}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, role: e.target.value }))
+                }
+              >
+                {ROLE_OPTIONS.map((opt: any) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Membership Status" required>
+              <Select
+                value={editForm.membership_status ?? "active"}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    membership_status: e.target.value,
+                  }))
+                }
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="dormant">Dormant</option>
+                <option value="exited">Exited</option>
+              </Select>
+            </FormField>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => {
+                setEditTarget(null);
+                setEditForm({});
+              }}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => editMutation.mutate(editForm)}
+              disabled={
+                editMutation.isPending ||
+                !editForm.full_name ||
+                !editForm.phone_number
+              }
+              className="btn-primary"
+            >
+              {editMutation.isPending ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
